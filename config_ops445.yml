@@ -1,0 +1,59 @@
+---
+- name: Configure OPS445 VM
+  hosts: myvmlab
+  become: yes
+  vars:
+    seneca_id: MGStephenson
+    lab_dirs:
+      - lab1
+      - lab2
+      - lab3
+      - lab4
+      - lab5
+      - lab6
+      - lab7
+      - lab8
+
+  tasks:
+
+    - name: Set hostname
+      hostname:
+        name: "{{ seneca_id }}"
+    
+    - name: Ensure Apache (httpd) is installed
+      yum:
+        name: httpd
+        state: latest
+    - name: Ensure EPEL repository is present
+      yum:
+        name: epel-release
+        state: present
+
+    - name: Remove tree package
+      yum:
+        name: tree
+        state: absent
+
+    - name: Create user with sudo privileges
+      user:
+        name: "{{ seneca_id }}"
+        groups: wheel
+        append: yes
+        state: present
+        shell: /bin/bash
+
+    - name: Allow passwordless SSH for new user
+      authorized_key:
+        user: "{{ seneca_id }}"
+        state: present
+        key: "{{ lookup('file', '/home/mgstephenson/.ssh/id_rsa.pub') }}"
+
+    - name: Create ops445 lab directories
+      file:
+        path: "/home/{{ seneca_id }}/ops445/{{ item }}"
+        state: directory
+        owner: "{{ seneca_id }}"
+        group: "{{ seneca_id }}"
+        mode: '0755'
+      loop: "{{ lab_dirs }}"
+
